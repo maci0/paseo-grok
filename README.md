@@ -4,6 +4,8 @@ Paseo provider plugin that lists Grok Build sessions on disk and resumes them ov
 
 `grok agent stdio` can `session/load` a TUI session, and `session/list` returns rows, but load does not stream the conversation. Paseo's ACP importer hides a row when load produces no conversation, so those sessions never appear. This provider reads `summary.json` for the picker and `updates.jsonl` for the transcript, then loads the same id so Grok keeps the real context.
 
+A follow-up sent while a turn is running uses Grok's `_x.ai/interject` method (`sessionId`, `text`). Grok queues that text into the active turn. The provider reports `prompt.steer` for that delivery. With no active turn, the follow-up fails instead of starting another one.
+
 ```bash
 bun install
 bun test
