@@ -9,6 +9,7 @@ import { readTextFile } from "../server/files";
 import { permissionView } from "../server/permission";
 import { promptText } from "../server/prompt-text";
 import { listGrokSessions, readPersistence, sessionPersistence } from "../server/sessions";
+import { INTERJECT_METHOD, interjectParams, steerOutcome } from "../server/steer";
 import { replayLines } from "../server/transcript";
 
 test("grok stdio args force a private agent", () => {
@@ -86,6 +87,22 @@ test("permission selection follows the answer", () => {
   assert.deepEqual(view.outcomeFor({ behavior: "deny", selectedActionId: "reject" }), {
     outcome: { outcome: "selected", optionId: "reject" },
   });
+});
+
+test("steer joins the active turn only when grok queues the interject", () => {
+  assert.deepEqual(interjectParams("ses-1", "also this"), { sessionId: "ses-1", text: "also this" });
+  assert.equal(INTERJECT_METHOD, "_x.ai/interject");
+  assert.deepEqual(steerOutcome(null, { result: { status: "queued" } }), {
+    type: "failed",
+    message: "There is no active turn to steer",
+  });
+  assert.deepEqual(steerOutcome("turn-1", { result: { status: "queued" } }), { type: "steer", turnId: "turn-1" });
+  assert.deepEqual(steerOutcome("turn-1", { status: "queued" }), { type: "steer", turnId: "turn-1" });
+  assert.deepEqual(steerOutcome("turn-1", { result: { status: "rejected" } }), {
+    type: "failed",
+    message: "Grok did not accept the steer",
+  });
+  assert.equal(steerOutcome("turn-1", null).type, "failed");
 });
 
 test("prompt text joins messages and renders commands", () => {

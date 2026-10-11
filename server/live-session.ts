@@ -12,12 +12,14 @@ import {
   CLOSE_TIMEOUT_MS,
   CONFIG_TIMEOUT_MS,
   INITIALIZE_TIMEOUT_MS,
+  INTERJECT_TIMEOUT_MS,
   LOAD_TIMEOUT_MS,
   NEW_SESSION_TIMEOUT_MS,
 } from "./constants";
 import { permissionView } from "./permission";
 import { ImagePromptError, promptText } from "./prompt-text";
 import { findUpdatesFile, sessionPersistence } from "./sessions";
+import { INTERJECT_METHOD, interjectParams, steerOutcome } from "./steer";
 import { replayFile, Transcript } from "./transcript";
 
 interface OpenInput {
@@ -115,6 +117,7 @@ export class LiveSession {
         capabilities: [
           "prompt.message",
           "prompt.command",
+          "prompt.steer",
           "session.configure",
           "session.list",
           "session.persistence",
@@ -146,6 +149,10 @@ export class LiveSession {
     }
     if (text.trim().length === 0) {
       this.failPrompt(prompt.clientMessageId, new Error("Prompt is empty"));
+      return;
+    }
+    if (prompt.delivery === "steer") {
+      await this.steer(client, prompt, text);
       return;
     }
     if (this.turnId) {
@@ -196,6 +203,43 @@ export class LiveSession {
     } finally {
       if (this.turnId === turnId) this.turnId = null;
     }
+  }
+
+  private async steer(
+    client: AcpClient,
+    prompt: Parameters<typeof promptText>[0],
+    text: string,
+  ): Promise<void> {
+    let response: unknown = null;
+    if (this.turnId) {
+      try {
+        response = await withTimeout(
+          client.request(INTERJECT_METHOD, interjectParams(this.grokSessionId, text)),
+          INTERJECT_TIMEOUT_MS,
+          "Grok interject timed out",
+        );
+      } catch (error) {
+        this.failPrompt(prompt.clientMessageId, error);
+        return;
+      }
+    }
+    const outcome = steerOutcome(this.turnId, response);
+    if (outcome.type === "failed") {
+      this.failPrompt(prompt.clientMessageId, new Error(outcome.message));
+      return;
+    }
+    if (prompt.clearPendingPermissions) this.denyPendingPermissions();
+    this.emit({
+      type: "timeline.item",
+      sessionId: this.sessionId,
+      item: { type: "user_message", id: `user:${prompt.clientMessageId}`, text, clientMessageId: prompt.clientMessageId },
+    });
+    this.emit({
+      type: "session.prompt_result",
+      sessionId: this.sessionId,
+      clientMessageId: prompt.clientMessageId,
+      result: { type: "steer", turnId: outcome.turnId },
+    });
   }
 
   async interrupt(): Promise<void> {
@@ -357,6 +401,12 @@ export class LiveSession {
       clientMessageId,
       result: { type: "failed", error: { message } },
     });
+  }
+
+  private denyPendingPermissions(): void {
+    for (const permissionId of [...this.permissions.keys()]) {
+      this.respondPermission(permissionId, { behavior: "deny" });
+    }
   }
 
   private cancelPermissions(): void {

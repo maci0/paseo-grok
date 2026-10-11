@@ -19,6 +19,7 @@ import { grokHome, listGrokSessions, readPersistence } from "./sessions";
 const CAPABILITIES = [
   "prompt.message",
   "prompt.command",
+  "prompt.steer",
   "session.configure",
   "session.list",
   "session.persistence",

@@ -66,7 +66,7 @@ export class AcpClient {
     await this.request("initialize", {
       protocolVersion: PROTOCOL_VERSION,
       clientCapabilities: { fs: { readTextFile: true, writeTextFile: true }, terminal: false },
-      clientInfo: { name: "paseo-grok", version: "0.1.0" },
+      clientInfo: { name: "paseo-grok", version: "0.1.1" },
     });
   }
 

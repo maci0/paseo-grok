@@ -10,6 +10,7 @@ export const LOAD_TIMEOUT_MS = 60_000;
 export const NEW_SESSION_TIMEOUT_MS = 30_000;
 export const CONFIG_TIMEOUT_MS = 15_000;
 export const CANCEL_TIMEOUT_MS = 10_000;
+export const INTERJECT_TIMEOUT_MS = 10_000;
 export const CLOSE_TIMEOUT_MS = 5_000;
 export const VERSION_TIMEOUT_MS = 5_000;
 
