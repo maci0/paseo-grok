@@ -1,0 +1,22 @@
+{
+  "name": "grok",
+  "private": true,
+  "version": "0.0.0",
+  "files": [
+    "paseo-plugin.json",
+    "OVERVIEW.md",
+    "index.server.ts",
+    "icon.svg",
+    "server/"
+  ],
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@getpaseo/plugin": "0.11.2",
+    "@types/node": "^26.6.5",
+    "typescript": "^5.9.3",
+    "zod": "^4.4.3"
+  }
+}

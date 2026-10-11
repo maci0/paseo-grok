@@ -1,0 +1,7 @@
+{
+  "id": "grok",
+  "name": "Grok",
+  "requirements": {
+    "paseo": ">=0.11.2"
+  }
+}
